@@ -146,7 +146,7 @@ class Sale(models.Model):
 class CropWorker(models.Model):
     pk = models.CompositePrimaryKey('crop_id', 'worker_id', 'assigned_date')
     crop = models.ForeignKey(Crop, on_delete=models.CASCADE, db_column='crop_id')
-    worker = models.ForeignKey(Worker, on_delete=models.CASCADE, db_column='worker_id')
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE, db_column='worker_id', related_name='crop_assignments')
     assigned_date = models.DateField()
     task_role = models.CharField(max_length=100, blank=True, null=True)
 
