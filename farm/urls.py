@@ -17,8 +17,26 @@ urlpatterns = [
     ),
 
     path(
-    'farms/create/',
-    login_required(views.FarmCreateView.as_view()),
-    name='farm-create'
-),
+        'farms/create/',
+        login_required(views.FarmCreateView.as_view()),
+        name='farm-create'
+    ),
+
+    path(
+        'farms/<uuid:farm_id>/',
+        login_required(views.FarmDetailView.as_view()),
+        name='farm-detail'
+    ),
+
+    path(
+        'farms/<uuid:pk>/edit/',
+        views.FarmUpdateView.as_view(),
+        name='farm-edit'
+    ),
+
+    path(
+        'farms/<uuid:pk>/delete/',
+        views.FarmDeleteView.as_view(),
+        name='farm-delete'
+    ),
 ]

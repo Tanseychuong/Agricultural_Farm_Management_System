@@ -7,105 +7,83 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3">{{ farm.farm_name }}</h1>
-        <p class="text-muted mb-0">
-            Farm details and crop records
-        </p>
+        <p class="text-muted mb-0">{{ farm.location }}</p>
     </div>
 
-    <a href="{% url 'farm-list' %}" class="btn btn-secondary">
+    <a href="{% url 'farm-list' %}" class="btn btn-outline-secondary">
         Back to Farms
+    </a>
+
+    <a href="{% url 'farm-edit' farm.pk %}" class="btn btn-primary">
+        Edit Farm
+    </a>
+
+    <a href="{% url 'farm-delete' farm.pk %}" class="btn btn-danger">
+        Delete Farm
     </a>
 </div>
 
+<div class="row g-3 mb-4">
 
-<!-- Farm information -->
-
-<div class="card mb-4">
-    <div class="card-body">
-
-        <h2 class="h5 mb-3">Farm Information</h2>
-
-        <div class="row">
-            <div class="col-md-6">
-                <strong>Farm Name</strong>
-                <p>{{ farm.farm_name }}</p>
-            </div>
-
-            <div class="col-md-6">
-                <strong>Location</strong>
-                <p>{{ farm.location }}</p>
-            </div>
-
-            <div class="col-md-6">
-                <strong>Total Size</strong>
-                <p>{{ farm.total_size }}</p>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-muted small">Location</div>
+                <div class="h5">{{ farm.location }}</div>
             </div>
         </div>
-
     </div>
-</div>
 
-
-<!-- Crops -->
-
-<div class="card">
-
-    <div class="card-body">
-
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="h5 mb-0">Crops</h2>
-
-            <span class="badge bg-secondary">
-                {{ farm.crops.count }} crops
-            </span>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-muted small">Total Size</div>
+                <div class="h5">{{ farm.total_size }}</div>
+            </div>
         </div>
+    </div>
 
-        <div class="table-responsive">
-
-            <table class="table table-sm">
-
-                <thead>
-                    <tr>
-                        <th>Crop</th>
-                        <th>Plot</th>
-                        <th>Planting Date</th>
-                        <th>Expected Harvest</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    {% for crop in farm.crops.all %}
-
-                    <tr>
-                        <td>{{ crop.crop_type }}</td>
-                        <td>{{ crop.plot_number|default:"—" }}</td>
-                        <td>{{ crop.planting_date }}</td>
-                        <td>
-                            {{ crop.expected_harvest_date|default:"—" }}
-                        </td>
-                        <td>{{ crop.status|default:"—" }}</td>
-                    </tr>
-
-                    {% empty %}
-
-                    <tr>
-                        <td colspan="5" class="text-muted">
-                            No crops have been registered for this farm yet.
-                        </td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-muted small">Crops</div>
+                <div class="h5">{{ farm.crops.count }}</div>
+            </div>
         </div>
-
     </div>
 
 </div>
+
+<h2 class="h5 mb-3">Crops on this farm</h2>
+
+<table class="table table-sm">
+    <thead>
+        <tr>
+            <th>Crop</th>
+            <th>Plot</th>
+            <th>Planting Date</th>
+            <th>Expected Harvest</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for crop in farm.crops.all %}
+        <tr>
+            <td>{{ crop.crop_type }}</td>
+            <td>{{ crop.plot_number|default:"—" }}</td>
+            <td>{{ crop.planting_date }}</td>
+            <td>{{ crop.expected_harvest_date|default:"—" }}</td>
+            <td>{{ crop.status|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-muted">
+                No crops have been registered for this farm.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 {% endblock %}

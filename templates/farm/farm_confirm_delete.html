@@ -1,0 +1,36 @@
+{% extends 'farm/base.html' %}
+
+{% block title %}Delete Farm{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <h1 class="h3 mb-4">Delete Farm</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <p>
+                Are you sure you want to delete
+                <strong>{{ object.farm_name }}</strong>?
+            </p>
+
+            <p class="text-muted">
+                This action cannot be undone.
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <a href="{% url 'farm-detail' object.pk %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+
+                <button type="submit" class="btn btn-danger">
+                    Delete Farm
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
