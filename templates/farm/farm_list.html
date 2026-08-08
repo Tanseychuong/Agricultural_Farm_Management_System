@@ -30,7 +30,11 @@
             <tbody>
                 {% for farm in farms %}
                 <tr>
-                    <td>{{ farm.farm_name }}</td>
+                    <td>
+                        <a href="{% url 'farm-detail' farm.pk %}">
+                            {{ farm.farm_name }}
+                        </a>
+                    </td>
                     <td>{{ farm.location }}</td>
                     <td>{{ farm.total_size }}</td>
                 </tr>
