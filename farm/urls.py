@@ -39,4 +39,10 @@ urlpatterns = [
         views.FarmDeleteView.as_view(),
         name='farm-delete'
     ),
+
+    path(
+        'crops/',
+        views.CropListView.as_view(),
+        name='crop-list'
+    ),
 ]
