@@ -1,0 +1,56 @@
+{% extends 'farm/base.html' %}
+{% block title %}{{ worker.first_name }} {{ worker.last_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3">{{ worker.first_name }} {{ worker.last_name }}</h1>
+        <p class="text-muted mb-0">{{ worker.job_role|default:"—" }}{% if worker.hire_date %} · hired {{
+            worker.hire_date }}{% endif %}</p>
+    </div>
+    <a href="{% url 'worker-list' %}" class="btn btn-outline-secondary">Back to Workers</a>
+</div>
+
+<h2 class="h5 mb-3">Farms worked</h2>
+{% if farms %}
+<div class="row g-3 mb-4">
+    {% for farm in farms %}
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="h6 mb-1">{{ farm.farm_name }}</div>
+                <div class="text-muted small">{{ farm.location }}</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">Not currently assigned to any crop, so no farm to show yet.</p>
+{% endif %}
+
+<h2 class="h5 mb-3">Crop assignments</h2>
+<table class="table table-sm">
+    <thead>
+        <tr>
+            <th>Crop</th>
+            <th>Farm</th>
+            <th>Assigned</th>
+            <th>Task</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in assignments %}
+        <tr>
+            <td>{{ a.crop.crop_type }} ({{ a.crop.plot_number|default:"—" }})</td>
+            <td>{{ a.crop.farm.farm_name }}</td>
+            <td>{{ a.assigned_date }}</td>
+            <td>{{ a.task_role|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-muted">No crop assignments recorded yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

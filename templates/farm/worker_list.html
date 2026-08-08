@@ -1,0 +1,37 @@
+{% extends 'farm/base.html' %}
+{% block title %}Workers{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Workers</h1>
+        <p class="text-muted mb-0">Click a worker to see which farms and crops they're assigned to.</p>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Hired</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for worker in workers %}
+                <tr>
+                    <td><a href="{% url 'worker-detail' worker.worker_id %}">{{ worker.first_name }} {{ worker.last_name
+                            }}</a></td>
+                    <td>{{ worker.job_role|default:"—" }}</td>
+                    <td>{{ worker.hire_date|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-muted text-center py-4">No workers found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
