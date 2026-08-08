@@ -102,3 +102,9 @@ class FarmDeleteView(DeleteView):
 
     def get_success_url(self):
         return reverse_lazy('farm-list')
+
+class CropListView(ListView):
+    model = Crop
+    template_name = 'farm/crop_list.html'
+    context_object_name = 'crops'
+    ordering = ['-planting_date']
