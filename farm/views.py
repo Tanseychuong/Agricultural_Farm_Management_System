@@ -119,6 +119,48 @@ class CropDeleteView(DeleteView):
     success_url = reverse_lazy('crop-list')
 
 
+# --- Worker views ---------------------------------------------------------
+# Read-only in the app UI (list + detail) — create/edit/delete for Worker
+# stay in the Django admin, which already handles this single-PK entity
+# fine without any custom code. The detail page is the interesting part:
+# Worker has no direct FK to Farm (a worker reaches a farm only via
+# crop_worker -> crop -> farm), so "which farms does this worker work on"
+# has to be derived from their crop assignments, not read off a field.
+
+class WorkerListView(ListView):
+    model = Worker
+    template_name = 'farm/worker_list.html'
+    context_object_name = 'workers'
+    ordering = ['last_name', 'first_name']
+
+
+class WorkerDetailView(DetailView):
+    model = Worker
+    template_name = 'farm/worker_detail.html'
+    context_object_name = 'worker'
+    pk_url_kwarg = 'worker_id'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        assignments = (
+            self.object.crop_assignments
+            .select_related('crop', 'crop__farm')
+            .order_by('-assigned_date')
+        )
+        context['assignments'] = assignments
+        # Distinct farms via crop_worker -> crop -> farm, de-duplicated by
+        # farm_id since a worker can be assigned to several crops on the
+        # same farm and should only show up once per farm here.
+        seen_farm_ids = set()
+        farms = []
+        for a in assignments:
+            farm = a.crop.farm
+            if farm.farm_id not in seen_farm_ids:
+                seen_farm_ids.add(farm.farm_id)
+                farms.append(farm)
+        context['farms'] = farms
+        return context
+
 # ============================================================
 # Junction-table CRUD — plain function-based views, not CBVs.
 #

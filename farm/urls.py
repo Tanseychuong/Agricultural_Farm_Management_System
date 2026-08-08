@@ -36,6 +36,12 @@ urlpatterns = [
         name='crop-worker-delete',
     ),
 
+    path('crops/<uuid:crop_id>/delete/', _protected(views.CropDeleteView.as_view()), name='crop-delete'),
+
+    # --- Worker (read-only in-app; create/edit/delete via Django admin) ---
+    path('workers/', _protected(views.WorkerListView.as_view()), name='worker-list'),
+    path('workers/<uuid:worker_id>/', _protected(views.WorkerDetailView.as_view()), name='worker-detail'),
+
     # --- Worker <-> Equipment assignments ---
     path('worker-equipment/', _protected(views.worker_equipment_list), name='worker-equipment-list'),
     path('worker-equipment/create/', _protected(views.worker_equipment_create), name='worker-equipment-create'),
