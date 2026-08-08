@@ -1,0 +1,17 @@
+{% extends 'farm/base.html' %}
+{% block title %}{% if form.instance.pk %}Edit Crop{% else %}Add Crop{% endif %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">{% if form.instance.pk %}Edit Crop{% else %}Add Crop{% endif %}</h1>
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Save Crop</button>
+                <a href="{% url 'crop-list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

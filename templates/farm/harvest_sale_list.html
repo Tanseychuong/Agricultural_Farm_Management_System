@@ -1,0 +1,31 @@
+{% extends 'farm/base.html' %}
+{% block title %}Sale Line Items{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Sale Line Items</h1>
+        <p class="text-muted mb-0">Which harvest quantities were sold in which sale.</p>
+    </div>
+    <a href="{% url 'harvest-sale-create' %}" class="btn btn-primary">Record Line Item</a>
+</div>
+<div class="card"><div class="card-body p-0">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Sale</th><th>Harvest</th><th>Quantity Sold</th><th>Unit Price</th><th></th></tr></thead>
+        <tbody>
+        {% for li in line_items %}
+            <tr>
+                <td>{{ li.sale.invoice_number }}</td>
+                <td>{{ li.harvest }}</td>
+                <td>{{ li.quantity_sold }}</td>
+                <td>{{ li.unit_price }}</td>
+                <td class="text-end">
+                    <a href="{% url 'harvest-sale-delete' li.harvest_id li.sale_id %}" class="btn btn-sm btn-outline-danger">Remove</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="text-muted text-center py-4">No sale line items recorded yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+{% endblock %}

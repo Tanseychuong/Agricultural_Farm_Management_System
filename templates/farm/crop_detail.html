@@ -1,0 +1,42 @@
+{% extends 'farm/base.html' %}
+{% block title %}{{ crop.crop_type }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3">{{ crop.crop_type }}</h1>
+        <p class="text-muted mb-0">{{ crop.farm.farm_name }} — plot {{ crop.plot_number|default:"—" }}</p>
+    </div>
+    <div>
+        <a href="{% url 'crop-list' %}" class="btn btn-outline-secondary">Back to Crops</a>
+        <a href="{% url 'crop-edit' crop.crop_id %}" class="btn btn-primary">Edit Crop</a>
+        <a href="{% url 'crop-delete' crop.crop_id %}" class="btn btn-danger">Delete Crop</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <div class="text-muted small">Status</div>
+            <div class="h5">{{ crop.status|default:"—" }}</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <div class="text-muted small">Planting Date</div>
+            <div class="h5">{{ crop.planting_date }}</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <div class="text-muted small">Expected Harvest</div>
+            <div class="h5">{{ crop.expected_harvest_date|default:"—" }}</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <div class="text-muted small">Harvests recorded</div>
+            <div class="h5">{{ crop.harvests.count }}</div>
+        </div></div>
+    </div>
+</div>
+{% endblock %}

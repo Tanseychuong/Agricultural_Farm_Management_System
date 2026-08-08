@@ -1,0 +1,31 @@
+{% extends 'farm/base.html' %}
+{% block title %}Equipment Assignments{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Equipment Assignments</h1>
+        <p class="text-muted mb-0">Which workers are operating which equipment.</p>
+    </div>
+    <a href="{% url 'worker-equipment-create' %}" class="btn btn-primary">Assign Equipment</a>
+</div>
+<div class="card"><div class="card-body p-0">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Worker</th><th>Equipment</th><th>Assigned</th><th>Returned</th><th></th></tr></thead>
+        <tbody>
+        {% for a in assignments %}
+            <tr>
+                <td>{{ a.worker }}</td>
+                <td>{{ a.equipment }}</td>
+                <td>{{ a.assigned_date }}</td>
+                <td>{{ a.return_date|default:"still checked out" }}</td>
+                <td class="text-end">
+                    <a href="{% url 'worker-equipment-delete' a.worker_id a.equipment_id a.assigned_date|date:'Y-m-d' %}" class="btn btn-sm btn-outline-danger">Remove</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="text-muted text-center py-4">No equipment assignments recorded yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+{% endblock %}

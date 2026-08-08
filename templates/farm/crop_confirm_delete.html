@@ -1,0 +1,16 @@
+{% extends 'farm/base.html' %}
+{% block title %}Delete Crop{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Delete Crop</h1>
+<div class="card">
+    <div class="card-body">
+        <p>Are you sure you want to delete <strong>{{ object.crop_type }}</strong> ({{ object.plot_number|default:"no plot" }})?</p>
+        <p class="text-muted">This action cannot be undone.</p>
+        <form method="post">
+            {% csrf_token %}
+            <a href="{% url 'crop-detail' object.crop_id %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-danger">Delete Crop</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

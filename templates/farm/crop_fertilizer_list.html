@@ -1,0 +1,31 @@
+{% extends 'farm/base.html' %}
+{% block title %}Fertilizer Usage{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Fertilizer Usage</h1>
+        <p class="text-muted mb-0">Fertilizer applied per crop. Recording usage here automatically deducts stock.</p>
+    </div>
+    <a href="{% url 'crop-fertilizer-create' %}" class="btn btn-primary">Record Usage</a>
+</div>
+<div class="card"><div class="card-body p-0">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Crop</th><th>Fertilizer</th><th>Date</th><th>Quantity Used</th><th></th></tr></thead>
+        <tbody>
+        {% for u in usages %}
+            <tr>
+                <td>{{ u.crop }}</td>
+                <td>{{ u.fertilizer }}</td>
+                <td>{{ u.usage_date }}</td>
+                <td>{{ u.quantity_used }} {{ u.fertilizer.unit }}</td>
+                <td class="text-end">
+                    <a href="{% url 'crop-fertilizer-delete' u.crop_id u.fertilizer_id u.usage_date|date:'Y-m-d' %}" class="btn btn-sm btn-outline-danger">Remove</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="text-muted text-center py-4">No fertilizer usage recorded yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+{% endblock %}

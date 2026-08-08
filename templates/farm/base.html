@@ -10,6 +10,14 @@
         <div class="container">
             <a class="navbar-brand" href="{% url 'dashboard' %}">Farm Management</a>
             {% if user.is_authenticated %}
+                <div class="navbar-nav flex-row flex-wrap gap-3 me-auto ms-4">
+                    <a class="nav-link text-white-50" href="{% url 'farm-list' %}">Farms</a>
+                    <a class="nav-link text-white-50" href="{% url 'crop-list' %}">Crops</a>
+                    <a class="nav-link text-white-50" href="{% url 'crop-worker-list' %}">Crop Workers</a>
+                    <a class="nav-link text-white-50" href="{% url 'worker-equipment-list' %}">Equipment</a>
+                    <a class="nav-link text-white-50" href="{% url 'crop-fertilizer-list' %}">Fertilizer Usage</a>
+                    <a class="nav-link text-white-50" href="{% url 'harvest-sale-list' %}">Sale Line Items</a>
+                </div>
                 <span class="text-white me-3">{{ user.username }}</span>
                 <form action="{% url 'logout' %}" method="post" class="d-inline">
                     {% csrf_token %}

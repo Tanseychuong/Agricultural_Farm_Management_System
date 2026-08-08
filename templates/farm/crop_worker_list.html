@@ -1,0 +1,31 @@
+{% extends 'farm/base.html' %}
+{% block title %}Crop Assignments{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Crop Assignments</h1>
+        <p class="text-muted mb-0">Which workers are assigned to which crops.</p>
+    </div>
+    <a href="{% url 'crop-worker-create' %}" class="btn btn-primary">Assign Worker</a>
+</div>
+<div class="card"><div class="card-body p-0">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Worker</th><th>Crop</th><th>Assigned</th><th>Task</th><th></th></tr></thead>
+        <tbody>
+        {% for a in assignments %}
+            <tr>
+                <td>{{ a.worker }}</td>
+                <td>{{ a.crop }}</td>
+                <td>{{ a.assigned_date }}</td>
+                <td>{{ a.task_role|default:"—" }}</td>
+                <td class="text-end">
+                    <a href="{% url 'crop-worker-delete' a.crop_id a.worker_id a.assigned_date|date:'Y-m-d' %}" class="btn btn-sm btn-outline-danger">Remove</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="text-muted text-center py-4">No assignments recorded yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+{% endblock %}
