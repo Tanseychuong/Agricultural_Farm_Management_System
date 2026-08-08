@@ -22,6 +22,12 @@
             <div class="card-body">
                 <div class="text-muted small">Crops</div>
                 <div class="h2">{{ crop_count }}</div>
+                <a href="{% url 'crop-list' %}" class="btn btn-primary btn-sm">
+                    View Crops
+                </a>
+                <a href="{% url 'crop-create' %}" class="btn btn-outline-primary btn-sm">
+                    Add Crop
+                </a>
             </div>
         </div>
     </div>
@@ -30,6 +36,10 @@
             <div class="card-body">
                 <div class="text-muted small">Workers</div>
                 <div class="h2">{{ worker_count }}</div>
+                <a href="{% url 'worker-list' %}" class="btn btn-primary btn-sm">
+                    View Workers
+                </a>
+                <a href="{% url 'crop-worker-create' %}" class="btn btn-outline-primary btn-sm">Assign Worker</a>
             </div>
         </div>
     </div>
