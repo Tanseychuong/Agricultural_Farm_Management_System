@@ -15,4 +15,10 @@ urlpatterns = [
         login_required(views.FarmListView.as_view()),
         name='farm-list'
     ),
+
+    path(
+    'farms/create/',
+    login_required(views.FarmCreateView.as_view()),
+    name='farm-create'
+),
 ]

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Crop
+from .models import Crop, Farm
 
 
 class CropForm(forms.ModelForm):
@@ -25,3 +25,20 @@ class CropForm(forms.ModelForm):
         if planting_date and expected_harvest_date and expected_harvest_date < planting_date:
             raise forms.ValidationError('Expected harvest date cannot be before the planting date.')
         return cleaned_data
+from django import forms
+
+
+class FarmForm(forms.ModelForm):
+    class Meta:
+        model = Farm
+        fields = ['farm_name', 'location', 'total_size']
+
+    def clean_total_size(self):
+        total_size = self.cleaned_data['total_size']
+
+        if total_size <= 0:
+            raise forms.ValidationError(
+                'Farm size must be greater than zero.'
+            )
+
+        return total_size

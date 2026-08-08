@@ -1,5 +1,8 @@
-from django.views.generic import TemplateView,ListView
+from django.shortcuts import redirect
+from django.views.generic import TemplateView, ListView, FormView
+
 from .models import Farm, Crop, Worker, Sale
+from .forms import FarmForm
 
 
 
@@ -44,3 +47,12 @@ class FarmListView(ListView):
     template_name = 'farm/farm_list.html'
     context_object_name = 'farms'
     ordering = ['farm_name']
+
+
+class FarmCreateView(FormView):
+    template_name = 'farm/farm_form.html'
+    form_class = FarmForm
+
+    def form_valid(self, form):
+        form.save()
+        return redirect('farm-list')
