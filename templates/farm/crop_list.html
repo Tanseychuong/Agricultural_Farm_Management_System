@@ -1,0 +1,85 @@
+{% extends 'farm/base.html' %}
+
+{% block title %}Crops{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3">Crops</h1>
+        <p class="text-muted mb-0">
+            Manage crops planted across your farms.
+        </p>
+    </div>
+
+    <a href="{% url 'crop-create' %}" class="btn btn-primary">
+        Add Crop
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+
+        <table class="table table-hover mb-0">
+
+            <thead>
+                <tr>
+                    <th>Crop</th>
+                    <th>Farm</th>
+                    <th>Plot</th>
+                    <th>Planting Date</th>
+                    <th>Expected Harvest</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for crop in crops %}
+
+                <tr>
+                    <td>
+                        <a href="{% url 'crop-detail' crop.pk %}">
+                            {{ crop.crop_type }}
+                        </a>
+                    </td>
+
+                    <td>
+                        {{ crop.farm.farm_name }}
+                    </td>
+
+                    <td>
+                        {{ crop.plot_number|default:"—" }}
+                    </td>
+
+                    <td>
+                        {{ crop.planting_date }}
+                    </td>
+
+                    <td>
+                        {{ crop.expected_harvest_date|default:"—" }}
+                    </td>
+
+                    <td>
+                        {{ crop.status|default:"—" }}
+                    </td>
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                    <td colspan="6" class="text-muted text-center py-4">
+                        No crops recorded yet.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+{% endblock %}
