@@ -12,6 +12,7 @@ def _protected(view):
 
 urlpatterns = [
     path('', _protected(views.DashboardView.as_view()), name='dashboard'),
+    path('', _protected(views.SCDashboardView.as_view()), name='dashboard'),
 
     # --- Farm CRUD ---
     path('farms/', _protected(views.FarmListView.as_view()), name='farm-list'),

@@ -25,7 +25,7 @@ class DashboardView(TemplateView):
     tables end to end. CRUD views for each entity follow the same
     generic-CBV pattern used below for Farm and Crop.
     """
-    template_name = 'farm/dashboard.html'
+    template_name = 'admin/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -39,6 +39,22 @@ class DashboardView(TemplateView):
         )
         return context
 
+class SCDashboardView(TemplateView):
+    """
+    First working page — confirms the ORM can read the existing Supabase
+    tables end to end. CRUD views for each entity follow the same
+    generic-CBV pattern used below for Farm and Crop.
+    """
+    template_name = 'sale_clerk/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['recent_sales'] = (
+            Sale.objects
+            .select_related('customer')
+            .order_by('-sale_date')[:10]
+        )
+        return context
 
 # --- Farm CRUD ---------------------------------------------------------
 # Only view_farm is granted to any group (see setup_roles.py) — nobody
