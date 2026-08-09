@@ -44,6 +44,8 @@ class Worker(models.Model):
     contact_details = models.CharField(max_length=255, blank=True, null=True)
     job_role = models.CharField(max_length=100, blank=True, null=True)
     hire_date = models.DateField(blank=True, null=True)
+    auth_user_id = models.UUIDField(unique=True, null=True, blank=True, editable=False
+)
 
     class Meta:
         managed = False
