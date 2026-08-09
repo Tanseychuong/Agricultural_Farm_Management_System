@@ -9,14 +9,14 @@ from django.views.generic import (
 )
 
 from .models import (
-    Farm, Crop, Worker, Sale,
+    Farm, Crop, Worker, Sale, Harvest, Equipment, Fertilizer,
     CropWorker, WorkerEquipment, CropFertilizer, HarvestSale,
 )
 from .forms import (
-    FarmForm, CropForm,
+    FarmForm, CropForm, HarvestForm, EquipmentForm, FertilizerForm, SaleForm,
     CropWorkerForm, WorkerEquipmentForm, CropFertilizerForm, HarvestSaleForm,
 )
-from .permissions import PermissionRequiredMixin
+from .permissions import PermissionRequiredMixin, farms_for_user, crops_for_user, coworkers_for_user
 
 
 class DashboardView(TemplateView):
@@ -25,7 +25,7 @@ class DashboardView(TemplateView):
     tables end to end. CRUD views for each entity follow the same
     generic-CBV pattern used below for Farm and Crop.
     """
-    template_name = 'admin/dashboard.html'
+    template_name = 'farm/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -39,22 +39,6 @@ class DashboardView(TemplateView):
         )
         return context
 
-class SCDashboardView(TemplateView):
-    """
-    First working page — confirms the ORM can read the existing Supabase
-    tables end to end. CRUD views for each entity follow the same
-    generic-CBV pattern used below for Farm and Crop.
-    """
-    template_name = 'sale_clerk/dashboard.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['recent_sales'] = (
-            Sale.objects
-            .select_related('customer')
-            .order_by('-sale_date')[:10]
-        )
-        return context
 
 # --- Farm CRUD ---------------------------------------------------------
 # Only view_farm is granted to any group (see setup_roles.py) — nobody
@@ -193,6 +177,217 @@ class WorkerDetailView(PermissionRequiredMixin, DetailView):
                 farms.append(farm)
         context['farms'] = farms
         return context
+
+
+# --- Harvest CRUD (Farm Manager) --------------------------------------------
+
+class HarvestListView(PermissionRequiredMixin, ListView):
+    model = Harvest
+    template_name = 'farm/harvest_list.html'
+    context_object_name = 'harvests'
+    ordering = ['-harvest_date']
+    permission_required = 'farm.view_harvest'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('crop', 'crop__farm')
+
+
+class HarvestDetailView(PermissionRequiredMixin, DetailView):
+    model = Harvest
+    template_name = 'farm/harvest_detail.html'
+    context_object_name = 'harvest'
+    pk_url_kwarg = 'harvest_id'
+    permission_required = 'farm.view_harvest'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sales'] = self.object.harvestsale_set.select_related('sale')
+        return context
+
+
+class HarvestCreateView(PermissionRequiredMixin, CreateView):
+    model = Harvest
+    form_class = HarvestForm
+    template_name = 'farm/harvest_form.html'
+    success_url = reverse_lazy('harvest-list')
+    permission_required = 'farm.add_harvest'
+
+
+class HarvestUpdateView(PermissionRequiredMixin, UpdateView):
+    model = Harvest
+    form_class = HarvestForm
+    template_name = 'farm/harvest_form.html'
+    pk_url_kwarg = 'harvest_id'
+    permission_required = 'farm.change_harvest'
+
+    def get_success_url(self):
+        return reverse_lazy('harvest-detail', kwargs={'harvest_id': self.object.pk})
+
+
+class HarvestDeleteView(PermissionRequiredMixin, DeleteView):
+    model = Harvest
+    template_name = 'farm/harvest_confirm_delete.html'
+    pk_url_kwarg = 'harvest_id'
+    success_url = reverse_lazy('harvest-list')
+    permission_required = 'farm.delete_harvest'
+
+    def form_valid(self, form):
+        # harvest_sale.harvest_id is ON DELETE RESTRICT — deleting a
+        # harvest that's already been sold from fails at the DB level.
+        # Without this, that shows up as a raw 500 error instead of a
+        # message the user can act on.
+        try:
+            return super().form_valid(form)
+        except DatabaseError:
+            messages.error(
+                self.request,
+                'This harvest has sale records against it and cannot be deleted. '
+                'Remove the related sale line items first.',
+            )
+            return redirect('harvest-detail', harvest_id=self.object.pk)
+
+
+# --- Equipment CRUD (Farm Manager) ------------------------------------------
+# No separate detail page — Equipment has few enough fields that the
+# edit form doubles as the detail view. Same for Fertilizer below.
+
+class EquipmentListView(PermissionRequiredMixin, ListView):
+    model = Equipment
+    template_name = 'farm/equipment_list.html'
+    context_object_name = 'equipment_items'
+    ordering = ['equipment_name']
+    permission_required = 'farm.view_equipment'
+
+
+class EquipmentCreateView(PermissionRequiredMixin, CreateView):
+    model = Equipment
+    form_class = EquipmentForm
+    template_name = 'farm/equipment_form.html'
+    success_url = reverse_lazy('equipment-list')
+    permission_required = 'farm.add_equipment'
+
+
+class EquipmentUpdateView(PermissionRequiredMixin, UpdateView):
+    model = Equipment
+    form_class = EquipmentForm
+    template_name = 'farm/equipment_form.html'
+    pk_url_kwarg = 'equipment_id'
+    success_url = reverse_lazy('equipment-list')
+    permission_required = 'farm.change_equipment'
+
+
+class EquipmentDeleteView(PermissionRequiredMixin, DeleteView):
+    model = Equipment
+    template_name = 'farm/equipment_confirm_delete.html'
+    pk_url_kwarg = 'equipment_id'
+    success_url = reverse_lazy('equipment-list')
+    permission_required = 'farm.delete_equipment'
+
+
+# --- Fertilizer CRUD (Farm Manager) -----------------------------------------
+
+class FertilizerListView(PermissionRequiredMixin, ListView):
+    model = Fertilizer
+    template_name = 'farm/fertilizer_list.html'
+    context_object_name = 'fertilizers'
+    ordering = ['fertilizer_type']
+    permission_required = 'farm.view_fertilizer'
+
+
+class FertilizerCreateView(PermissionRequiredMixin, CreateView):
+    model = Fertilizer
+    form_class = FertilizerForm
+    template_name = 'farm/fertilizer_form.html'
+    success_url = reverse_lazy('fertilizer-list')
+    permission_required = 'farm.add_fertilizer'
+
+
+class FertilizerUpdateView(PermissionRequiredMixin, UpdateView):
+    model = Fertilizer
+    form_class = FertilizerForm
+    template_name = 'farm/fertilizer_form.html'
+    pk_url_kwarg = 'fertilizer_id'
+    success_url = reverse_lazy('fertilizer-list')
+    permission_required = 'farm.change_fertilizer'
+
+
+class FertilizerDeleteView(PermissionRequiredMixin, DeleteView):
+    model = Fertilizer
+    template_name = 'farm/fertilizer_confirm_delete.html'
+    pk_url_kwarg = 'fertilizer_id'
+    success_url = reverse_lazy('fertilizer-list')
+    permission_required = 'farm.delete_fertilizer'
+
+    def form_valid(self, form):
+        # crop_fertilizer.fertilizer_id is also ON DELETE RESTRICT.
+        try:
+            return super().form_valid(form)
+        except DatabaseError:
+            messages.error(
+                self.request,
+                'This fertilizer has usage records against it and cannot be deleted.',
+            )
+            return redirect('fertilizer-list')
+
+
+# --- Sale CRUD (Sales Clerk) ------------------------------------------------
+# No delete view — delete_sale isn't granted to any group (see
+# setup_roles.py), matching the spec: Sales Clerk can view/create/edit,
+# never delete. Only a superuser could delete a Sale, and that's
+# available through Django admin already.
+
+class SaleListView(PermissionRequiredMixin, ListView):
+    model = Sale
+    template_name = 'farm/sale_list.html'
+    context_object_name = 'sales'
+    ordering = ['-sale_date']
+    permission_required = 'farm.view_sale'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('customer')
+
+
+class SaleDetailView(PermissionRequiredMixin, DetailView):
+    model = Sale
+    template_name = 'farm/sale_detail.html'
+    context_object_name = 'sale'
+    pk_url_kwarg = 'sale_id'
+    permission_required = 'farm.view_sale'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['line_items'] = self.object.harvestsale_set.select_related('harvest', 'harvest__crop')
+        return context
+
+
+class SaleCreateView(PermissionRequiredMixin, CreateView):
+    model = Sale
+    form_class = SaleForm
+    template_name = 'farm/sale_form.html'
+    permission_required = 'farm.add_sale'
+
+    def form_valid(self, form):
+        # total_amount isn't a form field — a new sale starts at 0 and
+        # grows as harvest-sale line items get added via
+        # sp_record_harvest_sale (see harvest_sale_create above), so it
+        # can never drift out of sync with what was actually sold.
+        form.instance.total_amount = 0
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('sale-detail', kwargs={'sale_id': self.object.pk})
+
+
+class SaleUpdateView(PermissionRequiredMixin, UpdateView):
+    model = Sale
+    form_class = SaleForm
+    template_name = 'farm/sale_form.html'
+    pk_url_kwarg = 'sale_id'
+    permission_required = 'farm.change_sale'
+
+    def get_success_url(self):
+        return reverse_lazy('sale-detail', kwargs={'sale_id': self.object.pk})
+
 
 # ============================================================
 # Junction-table CRUD — plain function-based views, not CBVs.

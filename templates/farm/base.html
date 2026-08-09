@@ -13,14 +13,16 @@
             <a class="navbar-brand" href="{% url 'dashboard' %}">Farm Management</a>
             {% if user.is_authenticated %}
             <div class="navbar-nav flex-row flex-wrap gap-3 me-auto ms-4">
-                <a class="nav-link text-white-50" href="{% url 'farm-list' %}">Farms</a>
-                <a class="nav-link text-white-50" href="{% url 'crop-list' %}">Crops</a>
-                <a class="nav-link text-white-50" href="{% url 'crop-worker-list' %}">Crop Workers</a>
-                <a class="nav-link text-white-50" href="{% url 'worker-equipment-list' %}">Equipment</a>
-                <a class="nav-link text-white-50" href="{% url 'crop-fertilizer-list' %}">Fertilizer Usage</a>
-                <a class="nav-link text-white-50" href="{% url 'harvest-sale-list' %}">Sale Line Items</a>
-                <a class="nav-link text-white-50" href="{% url 'crop-list' %}">Crops</a>
-                <a class="nav-link text-white-50" href="{% url 'worker-list' %}">Workers</a>
+                {% if perms.farm.view_farm %}<a class="nav-link text-white-50" href="{% url 'farm-list' %}">Farms</a>{% endif %}
+                {% if perms.farm.view_crop %}<a class="nav-link text-white-50" href="{% url 'crop-list' %}">Crops</a>{% endif %}
+                {% if perms.farm.view_worker %}<a class="nav-link text-white-50" href="{% url 'worker-list' %}">Workers</a>{% endif %}
+                {% if perms.farm.view_harvest %}<a class="nav-link text-white-50" href="{% url 'harvest-list' %}">Harvests</a>{% endif %}
+                {% if perms.farm.view_equipment %}<a class="nav-link text-white-50" href="{% url 'equipment-list' %}">Equipment</a>{% endif %}
+                {% if perms.farm.view_fertilizer %}<a class="nav-link text-white-50" href="{% url 'fertilizer-list' %}">Fertilizer</a>{% endif %}
+                {% if perms.farm.view_sale %}<a class="nav-link text-white-50" href="{% url 'sale-list' %}">Sales</a>{% endif %}
+                {% if perms.farm.view_cropworker %}<a class="nav-link text-white-50" href="{% url 'crop-worker-list' %}">Crop Assignments</a>{% endif %}
+                {% if perms.farm.view_workerequipment %}<a class="nav-link text-white-50" href="{% url 'worker-equipment-list' %}">Equipment Assignments</a>{% endif %}
+                {% if perms.farm.view_cropfertilizer %}<a class="nav-link text-white-50" href="{% url 'crop-fertilizer-list' %}">Fertilizer Usage</a>{% endif %}
             </div>
             <span class="text-white me-3">{{ user.username }}</span>
             <form action="{% url 'logout' %}" method="post" class="d-inline">

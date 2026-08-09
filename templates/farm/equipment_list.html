@@ -1,0 +1,28 @@
+{% extends 'farm/base.html' %}
+{% block title %}Equipment{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h1 class="h3 mb-0">Equipment</h1></div>
+    <a href="{% url 'equipment-create' %}" class="btn btn-primary">Add Equipment</a>
+</div>
+<div class="card"><div class="card-body p-0">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Name</th><th>Type</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for e in equipment_items %}
+            <tr>
+                <td>{{ e.equipment_name }}</td>
+                <td>{{ e.equipment_type|default:"—" }}</td>
+                <td>{{ e.status }}</td>
+                <td class="text-end">
+                    <a href="{% url 'equipment-edit' e.equipment_id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a href="{% url 'equipment-delete' e.equipment_id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-muted text-center py-4">No equipment recorded yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+{% endblock %}

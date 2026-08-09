@@ -1,0 +1,27 @@
+{% extends 'farm/base.html' %}
+{% block title %}Fertilizer{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h1 class="h3 mb-0">Fertilizer</h1></div>
+    <a href="{% url 'fertilizer-create' %}" class="btn btn-primary">Add Fertilizer</a>
+</div>
+<div class="card"><div class="card-body p-0">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Type</th><th>Stock Level</th><th></th></tr></thead>
+        <tbody>
+        {% for f in fertilizers %}
+            <tr>
+                <td>{{ f.fertilizer_type }}</td>
+                <td>{{ f.stock_level }} {{ f.unit|default:"" }}</td>
+                <td class="text-end">
+                    <a href="{% url 'fertilizer-edit' f.fertilizer_id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a href="{% url 'fertilizer-delete' f.fertilizer_id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="3" class="text-muted text-center py-4">No fertilizer recorded yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+{% endblock %}

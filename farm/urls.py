@@ -12,7 +12,6 @@ def _protected(view):
 
 urlpatterns = [
     path('', _protected(views.DashboardView.as_view()), name='dashboard'),
-    path('', _protected(views.SCDashboardView.as_view()), name='dashboard'),
 
     # --- Farm CRUD ---
     path('farms/', _protected(views.FarmListView.as_view()), name='farm-list'),
@@ -42,6 +41,31 @@ urlpatterns = [
     # --- Worker (read-only in-app; create/edit/delete via Django admin) ---
     path('workers/', _protected(views.WorkerListView.as_view()), name='worker-list'),
     path('workers/<uuid:worker_id>/', _protected(views.WorkerDetailView.as_view()), name='worker-detail'),
+
+    # --- Harvest CRUD ---
+    path('harvests/', _protected(views.HarvestListView.as_view()), name='harvest-list'),
+    path('harvests/create/', _protected(views.HarvestCreateView.as_view()), name='harvest-create'),
+    path('harvests/<uuid:harvest_id>/', _protected(views.HarvestDetailView.as_view()), name='harvest-detail'),
+    path('harvests/<uuid:harvest_id>/edit/', _protected(views.HarvestUpdateView.as_view()), name='harvest-edit'),
+    path('harvests/<uuid:harvest_id>/delete/', _protected(views.HarvestDeleteView.as_view()), name='harvest-delete'),
+
+    # --- Equipment CRUD ---
+    path('equipment/', _protected(views.EquipmentListView.as_view()), name='equipment-list'),
+    path('equipment/create/', _protected(views.EquipmentCreateView.as_view()), name='equipment-create'),
+    path('equipment/<uuid:equipment_id>/edit/', _protected(views.EquipmentUpdateView.as_view()), name='equipment-edit'),
+    path('equipment/<uuid:equipment_id>/delete/', _protected(views.EquipmentDeleteView.as_view()), name='equipment-delete'),
+
+    # --- Fertilizer CRUD ---
+    path('fertilizer/', _protected(views.FertilizerListView.as_view()), name='fertilizer-list'),
+    path('fertilizer/create/', _protected(views.FertilizerCreateView.as_view()), name='fertilizer-create'),
+    path('fertilizer/<uuid:fertilizer_id>/edit/', _protected(views.FertilizerUpdateView.as_view()), name='fertilizer-edit'),
+    path('fertilizer/<uuid:fertilizer_id>/delete/', _protected(views.FertilizerDeleteView.as_view()), name='fertilizer-delete'),
+
+    # --- Sale CRUD (no delete route -- see views.py) ---
+    path('sales/', _protected(views.SaleListView.as_view()), name='sale-list'),
+    path('sales/create/', _protected(views.SaleCreateView.as_view()), name='sale-create'),
+    path('sales/<uuid:sale_id>/', _protected(views.SaleDetailView.as_view()), name='sale-detail'),
+    path('sales/<uuid:sale_id>/edit/', _protected(views.SaleUpdateView.as_view()), name='sale-edit'),
 
     # --- Worker <-> Equipment assignments ---
     path('worker-equipment/', _protected(views.worker_equipment_list), name='worker-equipment-list'),

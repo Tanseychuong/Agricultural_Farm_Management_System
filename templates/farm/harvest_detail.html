@@ -1,0 +1,31 @@
+{% extends 'farm/base.html' %}
+{% block title %}Harvest — {{ harvest.crop.crop_type }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3">{{ harvest.crop.crop_type }} — {{ harvest.harvest_date }}</h1>
+        <p class="text-muted mb-0">{{ harvest.crop.farm.farm_name }} · {{ harvest.quantity }} harvested</p>
+    </div>
+    <div>
+        <a href="{% url 'harvest-list' %}" class="btn btn-outline-secondary">Back to Harvests</a>
+        <a href="{% url 'harvest-edit' harvest.harvest_id %}" class="btn btn-primary">Edit</a>
+        <a href="{% url 'harvest-delete' harvest.harvest_id %}" class="btn btn-danger">Delete</a>
+    </div>
+</div>
+
+<h2 class="h5 mb-3">Sold from this harvest</h2>
+<table class="table table-sm">
+    <thead><tr><th>Sale</th><th>Quantity Sold</th><th>Unit Price</th></tr></thead>
+    <tbody>
+    {% for li in sales %}
+        <tr>
+            <td><a href="{% url 'sale-detail' li.sale.sale_id %}">{{ li.sale.invoice_number }}</a></td>
+            <td>{{ li.quantity_sold }}</td>
+            <td>{{ li.unit_price }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="3" class="text-muted">Nothing sold from this harvest yet.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

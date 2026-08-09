@@ -1,0 +1,14 @@
+{% extends 'farm/base.html' %}
+{% block title %}Delete Harvest{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Delete Harvest</h1>
+<div class="card"><div class="card-body">
+    <p>Delete the {{ object.harvest_date }} harvest of <strong>{{ object.crop.crop_type }}</strong> ({{ object.quantity }})?</p>
+    <p class="text-muted">This action cannot be undone. If this harvest has already been sold from, the database will block this delete automatically.</p>
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'harvest-detail' object.harvest_id %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-danger">Delete Harvest</button>
+    </form>
+</div></div>
+{% endblock %}

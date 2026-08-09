@@ -1,5 +1,8 @@
 from django import forms
-from .models import Crop, Farm, CropWorker, WorkerEquipment, CropFertilizer, HarvestSale
+from .models import (
+    Crop, Farm, Harvest, Equipment, Fertilizer, Sale,
+    CropWorker, WorkerEquipment, CropFertilizer, HarvestSale,
+)
 
 
 class FarmForm(forms.ModelForm):
@@ -83,3 +86,46 @@ class HarvestSaleForm(forms.ModelForm):
     class Meta:
         model = HarvestSale
         fields = ['harvest', 'sale', 'quantity_sold', 'unit_price']
+
+
+# --- Manager-only entity forms ----------------------------------------------
+
+class HarvestForm(forms.ModelForm):
+    class Meta:
+        model = Harvest
+        fields = ['crop', 'harvest_date', 'quantity']
+        widgets = {'harvest_date': forms.DateInput(attrs={'type': 'date'})}
+
+
+class EquipmentForm(forms.ModelForm):
+    class Meta:
+        model = Equipment
+        fields = ['equipment_name', 'equipment_type', 'status']
+
+
+class FertilizerForm(forms.ModelForm):
+    class Meta:
+        model = Fertilizer
+        fields = ['fertilizer_type', 'stock_level', 'unit']
+
+    def clean_stock_level(self):
+        # Mirrors the DB CHECK (stock_level >= 0) — same reasoning as
+        # CropForm's date check: catch it here with a friendly message
+        # before the CHECK constraint ever has to.
+        stock_level = self.cleaned_data['stock_level']
+        if stock_level < 0:
+            raise forms.ValidationError('Stock level cannot be negative.')
+        return stock_level
+
+
+# --- Sales Clerk entity form -------------------------------------------------
+# total_amount is deliberately NOT a form field. It's built up by
+# sp_record_harvest_sale as line items get added (see
+# harvest_sale_create in views.py) — letting someone type an arbitrary
+# total here would let it drift out of sync with the actual line items.
+
+class SaleForm(forms.ModelForm):
+    class Meta:
+        model = Sale
+        fields = ['customer', 'sale_date', 'invoice_number']
+        widgets = {'sale_date': forms.DateInput(attrs={'type': 'date'})}
