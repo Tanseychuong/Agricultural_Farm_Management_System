@@ -1,6 +1,7 @@
 import datetime
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth.decorators import permission_required
 from django.urls import reverse_lazy
 from django.db import connection, DatabaseError
 from django.views.generic import (
@@ -15,6 +16,7 @@ from .forms import (
     FarmForm, CropForm,
     CropWorkerForm, WorkerEquipmentForm, CropFertilizerForm, HarvestSaleForm,
 )
+from .permissions import PermissionRequiredMixin
 
 
 class DashboardView(TemplateView):
@@ -39,41 +41,49 @@ class DashboardView(TemplateView):
 
 
 # --- Farm CRUD ---------------------------------------------------------
+# Only view_farm is granted to any group (see setup_roles.py) — nobody
+# but a superuser can create/edit/delete a Farm. That's not an oversight:
+# the spec gives Managers "see their farm(s)", never "manage farms".
 
-class FarmListView(ListView):
+class FarmListView(PermissionRequiredMixin, ListView):
     model = Farm
     template_name = 'farm/farm_list.html'
     context_object_name = 'farms'
     ordering = ['farm_name']
+    permission_required = 'farm.view_farm'
 
 
-class FarmDetailView(DetailView):
+class FarmDetailView(PermissionRequiredMixin, DetailView):
     model = Farm
     template_name = 'farm/farm_detail.html'
     context_object_name = 'farm'
     pk_url_kwarg = 'farm_id'
+    permission_required = 'farm.view_farm'
 
 
-class FarmCreateView(CreateView):
+class FarmCreateView(PermissionRequiredMixin, CreateView):
     model = Farm
     form_class = FarmForm
     template_name = 'farm/farm_form.html'
     success_url = reverse_lazy('farm-list')
+    permission_required = 'farm.add_farm'
 
 
-class FarmUpdateView(UpdateView):
+class FarmUpdateView(PermissionRequiredMixin, UpdateView):
     model = Farm
     form_class = FarmForm
     template_name = 'farm/farm_form.html'
+    permission_required = 'farm.change_farm'
 
     def get_success_url(self):
         return reverse_lazy('farm-detail', kwargs={'farm_id': self.object.pk})
 
 
-class FarmDeleteView(DeleteView):
+class FarmDeleteView(PermissionRequiredMixin, DeleteView):
     model = Farm
     template_name = 'farm/farm_confirm_delete.html'
     success_url = reverse_lazy('farm-list')
+    permission_required = 'farm.delete_farm'
 
 
 # --- Crop CRUD -----------------------------------------------------------
@@ -81,42 +91,47 @@ class FarmDeleteView(DeleteView):
 # form_class + generic CBV pattern. Copy this block for Worker, Harvest,
 # Sale, Equipment, Fertilizer, Customer to finish out single-PK CRUD.
 
-class CropListView(ListView):
+class CropListView(PermissionRequiredMixin, ListView):
     model = Crop
     template_name = 'farm/crop_list.html'
     context_object_name = 'crops'
     ordering = ['-planting_date']
+    permission_required = 'farm.view_crop'
 
 
-class CropDetailView(DetailView):
+class CropDetailView(PermissionRequiredMixin, DetailView):
     model = Crop
     template_name = 'farm/crop_detail.html'
     context_object_name = 'crop'
     pk_url_kwarg = 'crop_id'
+    permission_required = 'farm.view_crop'
 
 
-class CropCreateView(CreateView):
+class CropCreateView(PermissionRequiredMixin, CreateView):
     model = Crop
     form_class = CropForm
     template_name = 'farm/crop_form.html'
     success_url = reverse_lazy('crop-list')
+    permission_required = 'farm.add_crop'
 
 
-class CropUpdateView(UpdateView):
+class CropUpdateView(PermissionRequiredMixin, UpdateView):
     model = Crop
     form_class = CropForm
     template_name = 'farm/crop_form.html'
     pk_url_kwarg = 'crop_id'
+    permission_required = 'farm.change_crop'
 
     def get_success_url(self):
         return reverse_lazy('crop-detail', kwargs={'crop_id': self.object.pk})
 
 
-class CropDeleteView(DeleteView):
+class CropDeleteView(PermissionRequiredMixin, DeleteView):
     model = Crop
     template_name = 'farm/crop_confirm_delete.html'
     pk_url_kwarg = 'crop_id'
     success_url = reverse_lazy('crop-list')
+    permission_required = 'farm.delete_crop'
 
 
 # --- Worker views ---------------------------------------------------------
@@ -127,18 +142,20 @@ class CropDeleteView(DeleteView):
 # crop_worker -> crop -> farm), so "which farms does this worker work on"
 # has to be derived from their crop assignments, not read off a field.
 
-class WorkerListView(ListView):
+class WorkerListView(PermissionRequiredMixin, ListView):
     model = Worker
     template_name = 'farm/worker_list.html'
     context_object_name = 'workers'
     ordering = ['last_name', 'first_name']
+    permission_required = 'farm.view_worker'
 
 
-class WorkerDetailView(DetailView):
+class WorkerDetailView(PermissionRequiredMixin, DetailView):
     model = Worker
     template_name = 'farm/worker_detail.html'
     context_object_name = 'worker'
     pk_url_kwarg = 'worker_id'
+    permission_required = 'farm.view_worker'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -174,11 +191,13 @@ class WorkerDetailView(DetailView):
 
 # --- Crop <-> Worker assignments ----------------------------------------
 
+@permission_required('farm.view_cropworker', raise_exception=True)
 def crop_worker_list(request):
     assignments = CropWorker.objects.select_related('crop', 'worker').order_by('-assigned_date')
     return render(request, 'farm/crop_worker_list.html', {'assignments': assignments})
 
 
+@permission_required('farm.add_cropworker', raise_exception=True)
 def crop_worker_create(request):
     if request.method == 'POST':
         form = CropWorkerForm(request.POST)
@@ -202,6 +221,7 @@ def crop_worker_create(request):
     return render(request, 'farm/crop_worker_form.html', {'form': form})
 
 
+@permission_required('farm.delete_cropworker', raise_exception=True)
 def crop_worker_delete(request, crop_id, worker_id, assigned_date):
     assignment = get_object_or_404(
         CropWorker, crop_id=crop_id, worker_id=worker_id,
@@ -218,11 +238,13 @@ def crop_worker_delete(request, crop_id, worker_id, assigned_date):
 
 # --- Worker <-> Equipment assignments -------------------------------------
 
+@permission_required('farm.view_workerequipment', raise_exception=True)
 def worker_equipment_list(request):
     assignments = WorkerEquipment.objects.select_related('worker', 'equipment').order_by('-assigned_date')
     return render(request, 'farm/worker_equipment_list.html', {'assignments': assignments})
 
 
+@permission_required('farm.add_workerequipment', raise_exception=True)
 def worker_equipment_create(request):
     if request.method == 'POST':
         form = WorkerEquipmentForm(request.POST)
@@ -241,6 +263,7 @@ def worker_equipment_create(request):
     return render(request, 'farm/worker_equipment_form.html', {'form': form})
 
 
+@permission_required('farm.delete_workerequipment', raise_exception=True)
 def worker_equipment_delete(request, worker_id, equipment_id, assigned_date):
     assignment = get_object_or_404(
         WorkerEquipment, worker_id=worker_id, equipment_id=equipment_id,
@@ -257,11 +280,13 @@ def worker_equipment_delete(request, worker_id, equipment_id, assigned_date):
 
 # --- Crop <-> Fertilizer usage ---------------------------------------------
 
+@permission_required('farm.view_cropfertilizer', raise_exception=True)
 def crop_fertilizer_list(request):
     usages = CropFertilizer.objects.select_related('crop', 'fertilizer').order_by('-usage_date')
     return render(request, 'farm/crop_fertilizer_list.html', {'usages': usages})
 
 
+@permission_required('farm.add_cropfertilizer', raise_exception=True)
 def crop_fertilizer_create(request):
     if request.method == 'POST':
         form = CropFertilizerForm(request.POST)
@@ -281,6 +306,7 @@ def crop_fertilizer_create(request):
     return render(request, 'farm/crop_fertilizer_form.html', {'form': form})
 
 
+@permission_required('farm.delete_cropfertilizer', raise_exception=True)
 def crop_fertilizer_delete(request, crop_id, fertilizer_id, usage_date):
     usage = get_object_or_404(
         CropFertilizer, crop_id=crop_id, fertilizer_id=fertilizer_id,
@@ -297,11 +323,13 @@ def crop_fertilizer_delete(request, crop_id, fertilizer_id, usage_date):
 
 # --- Harvest <-> Sale line items ---------------------------------------------
 
+@permission_required('farm.view_harvestsale', raise_exception=True)
 def harvest_sale_list(request):
     line_items = HarvestSale.objects.select_related('harvest', 'sale').order_by('-sale__sale_date')
     return render(request, 'farm/harvest_sale_list.html', {'line_items': line_items})
 
 
+@permission_required('farm.add_harvestsale', raise_exception=True)
 def harvest_sale_create(request):
     if request.method == 'POST':
         form = HarvestSaleForm(request.POST)
@@ -327,6 +355,7 @@ def harvest_sale_create(request):
     return render(request, 'farm/harvest_sale_form.html', {'form': form})
 
 
+@permission_required('farm.delete_harvestsale', raise_exception=True)
 def harvest_sale_delete(request, harvest_id, sale_id):
     line_item = get_object_or_404(HarvestSale, harvest_id=harvest_id, sale_id=sale_id)
     if request.method == 'POST':

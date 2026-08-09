@@ -1,4 +1,5 @@
 import uuid
+from django.conf import settings
 from django.db import models
 
 # All models below are managed = False: Django never creates, alters, or
@@ -44,8 +45,6 @@ class Worker(models.Model):
     contact_details = models.CharField(max_length=255, blank=True, null=True)
     job_role = models.CharField(max_length=100, blank=True, null=True)
     hire_date = models.DateField(blank=True, null=True)
-    auth_user_id = models.UUIDField(unique=True, null=True, blank=True, editable=False
-)
 
     class Meta:
         managed = False
@@ -203,3 +202,38 @@ class HarvestSale(models.Model):
 
     def __str__(self):
         return f'{self.quantity_sold} from {self.harvest} in {self.sale}'
+
+
+# ============================================================
+# Authentication bridge — Django User -> Worker
+# ============================================================
+# This table is Django-owned (managed = True), unlike everything above.
+# It's app-specific glue for the dashboard, not part of the graded
+# Phase 3/4 domain schema — which is exactly why it lives in its own
+# table instead of adding an auth-related column onto `worker` itself.
+# The domain schema stays exactly as designed and graded; this is a
+# separate concern bolted on top of it.
+#
+# `worker` is nullable because not every logged-in user corresponds to
+# a farm worker — a Sales Clerk account, for instance, has no reason to
+# be linked to a Worker row at all.
+#
+# Role itself is NOT stored here — see farm/permissions.py. Role comes
+# from Django Group membership, which is what actually powers
+# PermissionRequiredMixin on every view. Duplicating "role" as a field
+# here would just be a second source of truth to keep in sync.
+
+class WorkerProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='worker_profile',
+    )
+    worker = models.OneToOneField(
+        Worker, on_delete=models.SET_NULL, null=True, blank=True, related_name='profile',
+        help_text='Required for Farm Manager / Field Worker accounts. Leave blank for Sales Clerk.',
+    )
+
+    class Meta:
+        managed = True
+
+    def __str__(self):
+        return f'{self.user.username} -> {self.worker or "no linked worker"}'

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Farm, Customer, Worker, Equipment, Fertilizer, Crop, Harvest, Sale
+from .models import Farm, Customer, Worker, Equipment, Fertilizer, Crop, Harvest, Sale, WorkerProfile
 
 # Composite-PK models (CropWorker, WorkerEquipment, CropFertilizer, HarvestSale)
 # can't be registered here — Django admin doesn't support composite primary
@@ -61,3 +61,18 @@ class SaleAdmin(admin.ModelAdmin):
     list_filter = ('sale_date',)
     search_fields = ('invoice_number',)
     autocomplete_fields = ('customer',)
+
+
+@admin.register(WorkerProfile)
+class WorkerProfileAdmin(admin.ModelAdmin):
+    """
+    This is where an Admin links a Django login (User) to a Worker row,
+    and — by adding that User to a Group (Farm Manager / Field Worker /
+    Sales Clerk) via the standard User admin page — decides what they
+    can do. Nothing here can grant someone the ability to create new
+    logins; that stays governed by is_superuser/is_staff, which this
+    page never touches.
+    """
+    list_display = ('user', 'worker')
+    autocomplete_fields = ('user', 'worker')
+    search_fields = ('user__username', 'worker__first_name', 'worker__last_name')
