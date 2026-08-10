@@ -15,9 +15,10 @@ farm, not just permission-gated, should filter its queryset through one
 of these rather than relying on permissions alone.
 """
 
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth.mixins import PermissionRequiredMixin as _DjangoPermissionRequiredMixin
 
-from .models import Farm, Crop, Worker, CropWorker
+from .models import Farm, Crop, Worker, Harvest, CropWorker
 
 
 class PermissionRequiredMixin(_DjangoPermissionRequiredMixin):
@@ -30,6 +31,41 @@ class PermissionRequiredMixin(_DjangoPermissionRequiredMixin):
     instead of importing Django's version directly.
     """
     raise_exception = True
+
+
+class GroupRequiredMixin:
+    """
+    Restricts a view to members of a specific Group (or superusers).
+    The CRUD views above are gated by PermissionRequiredMixin, which
+    checks Django model permissions (view_crop, add_sale, etc.) — but a
+    dashboard isn't a model, so there's no "view_managerdashboard"
+    permission to check. This checks group membership directly instead:
+    a Sales Clerk typing /dashboard/manager/ directly gets a 403, not
+    just a missing link in their nav.
+
+    Assumes the user is already authenticated (every URL in this app
+    goes through login_required — see urls.py's _protected() helper),
+    so this only needs to handle the "logged in but wrong role" case.
+    """
+    required_group = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not (request.user.is_superuser or request.user.groups.filter(name=self.required_group).exists()):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
+class SuperuserRequiredMixin:
+    """
+    Restricts a view to superusers only. Admin isn't a Group like the
+    other three roles — it's Django's built-in is_superuser flag, so
+    this checks that directly rather than group membership.
+    """
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
 
 def get_worker(user):
@@ -74,9 +110,10 @@ def crops_for_user(user):
     return Crop.objects.filter(crop_id__in=crop_ids)
 
 
-def coworkers_for_user(user):
-    """Other workers assigned to any crop on any farm this user works on
-    — i.e. "who else works here". Superusers get every worker."""
+def workers_for_user(user):
+    """Every worker on any farm this user's linked worker works on,
+    INCLUDING themselves — this is the "who's on my farm" roster.
+    Superusers get every worker."""
     if user.is_superuser:
         return Worker.objects.all()
     worker = get_worker(user)
@@ -89,4 +126,24 @@ def coworkers_for_user(user):
         .values_list('worker_id', flat=True)
         .distinct()
     )
-    return Worker.objects.filter(worker_id__in=worker_ids).exclude(worker_id=worker.worker_id)
+    return Worker.objects.filter(worker_id__in=worker_ids)
+
+
+def coworkers_for_user(user):
+    """Same as workers_for_user, but EXCLUDING the user themself — i.e.
+    "who else works here". Superusers get every worker."""
+    if user.is_superuser:
+        return Worker.objects.all()
+    worker = get_worker(user)
+    if worker is None:
+        return Worker.objects.none()
+    return workers_for_user(user).exclude(worker_id=worker.worker_id)
+
+
+def harvests_for_user(user):
+    """Harvests belonging to crops this user's linked worker is assigned
+    to. Superusers get every harvest."""
+    if user.is_superuser:
+        return Harvest.objects.all()
+    crop_ids = crops_for_user(user).values_list('crop_id', flat=True)
+    return Harvest.objects.filter(crop_id__in=crop_ids)

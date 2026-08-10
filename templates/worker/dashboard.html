@@ -1,0 +1,93 @@
+{% extends 'farm/base.html' %}
+{% block title %}My Dashboard{% endblock %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-3">
+        <div class="card shadow-sm border-0 bg-body-tertiary h-100">
+            <div class="card-body p-4">
+                <h2 class="h6 text-uppercase fw-bold text-muted mb-3">My View</h2>
+                <div class="list-group list-group-flush rounded-3 overflow-hidden shadow-sm bg-body">
+                    <a href="{% url 'crop-list' %}" class="list-group-item list-group-item-action d-flex align-items-center py-2 px-3">
+                        <i class="bi bi-flower1 text-success me-2"></i> My Crops
+                    </a>
+                    <a href="{% url 'worker-list' %}" class="list-group-item list-group-item-action d-flex align-items-center py-2 px-3">
+                        <i class="bi bi-people text-info me-2"></i> Coworkers
+                    </a>
+                    <a href="{% url 'farm-list' %}" class="list-group-item list-group-item-action d-flex align-items-center py-2 px-3">
+                        <i class="bi bi-geo-alt text-primary me-2"></i> My Farm
+                    </a>
+                </div>
+                <p class="text-muted small mt-3 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>Your account has view-only access.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <h1 class="h3 mb-1 fw-bold">My Dashboard</h1>
+            <p class="text-muted mb-0 small">What you're assigned to work on right now.</p>
+        </div>
+
+        <h2 class="h6 text-uppercase fw-bold text-muted mb-2">Farm{{ farms|length|pluralize }}</h2>
+        {% if farms %}
+        <div class="row g-3 mb-4">
+            {% for farm in farms %}
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 bg-body-tertiary">
+                    <div class="card-body">
+                        <div class="fw-semibold"><i class="bi bi-geo-alt text-primary me-1"></i> {{ farm.farm_name }}</div>
+                        <div class="text-muted small">{{ farm.location }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-warning">You're not currently assigned to any crop, so no farm shows here yet. Ask your Manager to assign you to a crop.</div>
+        {% endif %}
+
+        <div class="row g-3">
+            <div class="col-md-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3 fw-bold">My crops</h2>
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Crop</th><th>Plot</th><th>Status</th></tr></thead>
+                            <tbody>
+                            {% for crop in crops %}
+                                <tr>
+                                    <td>{{ crop.crop_type }}</td>
+                                    <td class="text-muted">{{ crop.plot_number|default:"—" }}</td>
+                                    <td><span class="badge bg-secondary">{{ crop.status|default:"—" }}</span></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3" class="text-muted text-center py-3">No crop assignments yet.</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3 fw-bold">Coworkers</h2>
+                        <ul class="list-group list-group-flush">
+                        {% for w in coworkers %}
+                            <li class="list-group-item px-0 d-flex justify-content-between">
+                                <span>{{ w }}</span>
+                                <span class="text-muted small">{{ w.job_role|default:"" }}</span>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item px-0 text-muted">No coworkers to show yet.</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

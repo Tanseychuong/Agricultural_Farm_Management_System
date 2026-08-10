@@ -7,7 +7,12 @@
         <p class="text-muted mb-0">{{ worker.job_role|default:"—" }}{% if worker.hire_date %} · hired {{
             worker.hire_date }}{% endif %}</p>
     </div>
-    <a href="{% url 'worker-list' %}" class="btn btn-outline-secondary">Back to Workers</a>
+    <div>
+        <a href="{% url 'worker-list' %}" class="btn btn-outline-secondary">Back to Workers</a>
+        {% if perms.farm.delete_worker %}
+        <a href="{% url 'worker-delete' worker.worker_id %}" class="btn btn-danger">Delete Worker</a>
+        {% endif %}
+    </div>
 </div>
 
 <h2 class="h5 mb-3">Farms worked</h2>

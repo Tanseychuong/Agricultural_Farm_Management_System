@@ -7,6 +7,7 @@ from django.db import connection, DatabaseError
 from django.views.generic import (
     TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView,
 )
+from django.views import View
 
 from .models import (
     Farm, Crop, Worker, Sale, Harvest, Equipment, Fertilizer,
@@ -16,16 +17,39 @@ from .forms import (
     FarmForm, CropForm, HarvestForm, EquipmentForm, FertilizerForm, SaleForm,
     CropWorkerForm, WorkerEquipmentForm, CropFertilizerForm, HarvestSaleForm,
 )
-from .permissions import PermissionRequiredMixin, farms_for_user, crops_for_user, coworkers_for_user
+from .permissions import (
+    PermissionRequiredMixin, GroupRequiredMixin, SuperuserRequiredMixin,
+    farms_for_user, crops_for_user, workers_for_user, coworkers_for_user, harvests_for_user,
+)
 
 
-class DashboardView(TemplateView):
+class DashboardRouterView(View):
     """
-    First working page — confirms the ORM can read the existing Supabase
-    tables end to end. CRUD views for each entity follow the same
-    generic-CBV pattern used below for Farm and Crop.
+    The '/' route. Sends each user straight to the dashboard that
+    matches their role, instead of showing one dashboard to everyone.
+
+    A logged-in user with no role assigned yet — not a superuser, not
+    in any of the three groups — is a real state worth surfacing
+    directly rather than guessing which dashboard to show them: it
+    means whoever created their account forgot to add them to a group.
     """
-    template_name = 'farm/dashboard.html'
+
+    def get(self, request):
+        user = request.user
+        if user.is_superuser:
+            return redirect('admin-dashboard')
+        if user.groups.filter(name='Farm Manager').exists():
+            return redirect('manager-dashboard')
+        if user.groups.filter(name='Field Worker').exists():
+            return redirect('worker-dashboard')
+        if user.groups.filter(name='Sales Clerk').exists():
+            return redirect('sales-dashboard')
+        return render(request, 'farm/no_role.html')
+
+
+class AdminDashboardView(SuperuserRequiredMixin, TemplateView):
+    """Superuser-only. Full, unscoped view across every farm."""
+    template_name = 'admin/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -37,6 +61,74 @@ class DashboardView(TemplateView):
             .select_related('customer')
             .order_by('-sale_date')[:5]
         )
+        return context
+
+
+class ManagerDashboardView(GroupRequiredMixin, TemplateView):
+    """
+    Farm Manager only. Everything here is scoped through farms_for_user
+    / crops_for_user / workers_for_user (permissions.py) — derived from
+    which crops this Manager's linked Worker is assigned to, since
+    Worker has no direct FK to Farm. A Manager overseeing Farm A never
+    sees Farm B's data here.
+    """
+    required_group = 'Farm Manager'
+    template_name = 'manager/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context['farms'] = farms_for_user(user)
+        context['crops'] = crops_for_user(user).select_related('farm')
+        context['crop_count'] = context['crops'].count()
+        context['worker_count'] = workers_for_user(user).count()
+        context['recent_harvests'] = (
+            harvests_for_user(user)
+            .select_related('crop', 'crop__farm')
+            .order_by('-harvest_date')[:5]
+        )
+        # Equipment and fertilizer aren't farm-specific in the schema
+        # (no farm_id column on either table) — shared resources across
+        # the whole operation, so these stay unscoped.
+        context['equipment_count'] = Equipment.objects.count()
+        context['low_stock_fertilizer'] = Fertilizer.objects.filter(stock_level__lte=20)
+        return context
+
+
+class WorkerDashboardView(GroupRequiredMixin, TemplateView):
+    """
+    Field Worker only. Read-only by design — no create/edit/delete
+    links anywhere on this page, matching the spec ("no editing/
+    deleting administrative data"). Same scoping helpers as the Manager
+    dashboard, just presented without any management actions.
+    """
+    required_group = 'Field Worker'
+    template_name = 'worker/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context['farms'] = farms_for_user(user)
+        context['crops'] = crops_for_user(user).select_related('farm')
+        context['coworkers'] = coworkers_for_user(user)
+        return context
+
+
+class SalesDashboardView(GroupRequiredMixin, TemplateView):
+    """Sales Clerk only. Sales aren't farm-scoped in the schema (a Sale
+    links to a Customer, not a Worker/Farm), so this stays unscoped."""
+    required_group = 'Sales Clerk'
+    template_name = 'sale_clerk/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['recent_sales'] = (
+            Sale.objects
+            .select_related('customer')
+            .order_by('-sale_date')[:10]
+        )
+        context['sale_count'] = Sale.objects.count()
+        context['customer_count'] = Sale.objects.values('customer_id').distinct().count()
         return context
 
 
@@ -52,6 +144,9 @@ class FarmListView(PermissionRequiredMixin, ListView):
     ordering = ['farm_name']
     permission_required = 'farm.view_farm'
 
+    def get_queryset(self):
+        return farms_for_user(self.request.user).order_by('farm_name')
+
 
 class FarmDetailView(PermissionRequiredMixin, DetailView):
     model = Farm
@@ -59,6 +154,12 @@ class FarmDetailView(PermissionRequiredMixin, DetailView):
     context_object_name = 'farm'
     pk_url_kwarg = 'farm_id'
     permission_required = 'farm.view_farm'
+
+    def get_queryset(self):
+        # Scoping get_queryset() (not just permission_required) means a
+        # farm outside farms_for_user() 404s instead of rendering — a
+        # Field Worker can't view another farm's page by guessing its UUID.
+        return farms_for_user(self.request.user)
 
 
 class FarmCreateView(PermissionRequiredMixin, CreateView):
@@ -98,6 +199,9 @@ class CropListView(PermissionRequiredMixin, ListView):
     ordering = ['-planting_date']
     permission_required = 'farm.view_crop'
 
+    def get_queryset(self):
+        return crops_for_user(self.request.user).select_related('farm').order_by('-planting_date')
+
 
 class CropDetailView(PermissionRequiredMixin, DetailView):
     model = Crop
@@ -105,6 +209,9 @@ class CropDetailView(PermissionRequiredMixin, DetailView):
     context_object_name = 'crop'
     pk_url_kwarg = 'crop_id'
     permission_required = 'farm.view_crop'
+
+    def get_queryset(self):
+        return crops_for_user(self.request.user)
 
 
 class CropCreateView(PermissionRequiredMixin, CreateView):
@@ -114,6 +221,17 @@ class CropCreateView(PermissionRequiredMixin, CreateView):
     success_url = reverse_lazy('crop-list')
     permission_required = 'farm.add_crop'
 
+    def get_form(self, form_class=None):
+        # Without this, the farm dropdown shows every farm in the
+        # system — a Manager could attach a new crop to a farm they
+        # don't oversee, even though they'd never be able to see it
+        # afterwards (CropDetailView is scoped too). Scoping the choices
+        # here stops the mistake at the source instead of just hiding
+        # its result.
+        form = super().get_form(form_class)
+        form.fields['farm'].queryset = farms_for_user(self.request.user)
+        return form
+
 
 class CropUpdateView(PermissionRequiredMixin, UpdateView):
     model = Crop
@@ -121,6 +239,14 @@ class CropUpdateView(PermissionRequiredMixin, UpdateView):
     template_name = 'farm/crop_form.html'
     pk_url_kwarg = 'crop_id'
     permission_required = 'farm.change_crop'
+
+    def get_queryset(self):
+        return crops_for_user(self.request.user)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['farm'].queryset = farms_for_user(self.request.user)
+        return form
 
     def get_success_url(self):
         return reverse_lazy('crop-detail', kwargs={'crop_id': self.object.pk})
@@ -149,6 +275,9 @@ class WorkerListView(PermissionRequiredMixin, ListView):
     ordering = ['last_name', 'first_name']
     permission_required = 'farm.view_worker'
 
+    def get_queryset(self):
+        return workers_for_user(self.request.user).order_by('last_name', 'first_name')
+
 
 class WorkerDetailView(PermissionRequiredMixin, DetailView):
     model = Worker
@@ -156,6 +285,9 @@ class WorkerDetailView(PermissionRequiredMixin, DetailView):
     context_object_name = 'worker'
     pk_url_kwarg = 'worker_id'
     permission_required = 'farm.view_worker'
+
+    def get_queryset(self):
+        return workers_for_user(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -179,6 +311,28 @@ class WorkerDetailView(PermissionRequiredMixin, DetailView):
         return context
 
 
+class WorkerDeleteView(PermissionRequiredMixin, DeleteView):
+    """
+    The gap this fills: setup_roles.py grants Farm Manager the
+    delete_worker permission, but until now there was no view or route
+    that let a Manager actually use it — the permission existed with
+    nothing behind it.
+
+    worker.crop_worker and worker.worker_equipment both CASCADE on
+    delete (see Phase 4 DDL), so deleting a Worker silently deletes
+    their entire assignment history too. The confirm template makes
+    this explicit rather than letting it be a surprise.
+    """
+    model = Worker
+    template_name = 'farm/worker_confirm_delete.html'
+    pk_url_kwarg = 'worker_id'
+    success_url = reverse_lazy('worker-list')
+    permission_required = 'farm.delete_worker'
+
+    def get_queryset(self):
+        return workers_for_user(self.request.user)
+
+
 # --- Harvest CRUD (Farm Manager) --------------------------------------------
 
 class HarvestListView(PermissionRequiredMixin, ListView):
@@ -189,7 +343,7 @@ class HarvestListView(PermissionRequiredMixin, ListView):
     permission_required = 'farm.view_harvest'
 
     def get_queryset(self):
-        return super().get_queryset().select_related('crop', 'crop__farm')
+        return harvests_for_user(self.request.user).select_related('crop', 'crop__farm').order_by('-harvest_date')
 
 
 class HarvestDetailView(PermissionRequiredMixin, DetailView):
@@ -198,6 +352,9 @@ class HarvestDetailView(PermissionRequiredMixin, DetailView):
     context_object_name = 'harvest'
     pk_url_kwarg = 'harvest_id'
     permission_required = 'farm.view_harvest'
+
+    def get_queryset(self):
+        return harvests_for_user(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -212,6 +369,11 @@ class HarvestCreateView(PermissionRequiredMixin, CreateView):
     success_url = reverse_lazy('harvest-list')
     permission_required = 'farm.add_harvest'
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['crop'].queryset = crops_for_user(self.request.user)
+        return form
+
 
 class HarvestUpdateView(PermissionRequiredMixin, UpdateView):
     model = Harvest
@@ -219,6 +381,14 @@ class HarvestUpdateView(PermissionRequiredMixin, UpdateView):
     template_name = 'farm/harvest_form.html'
     pk_url_kwarg = 'harvest_id'
     permission_required = 'farm.change_harvest'
+
+    def get_queryset(self):
+        return harvests_for_user(self.request.user)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['crop'].queryset = crops_for_user(self.request.user)
+        return form
 
     def get_success_url(self):
         return reverse_lazy('harvest-detail', kwargs={'harvest_id': self.object.pk})
@@ -412,6 +582,8 @@ def crop_worker_list(request):
 def crop_worker_create(request):
     if request.method == 'POST':
         form = CropWorkerForm(request.POST)
+        form.fields['crop'].queryset = crops_for_user(request.user)
+        form.fields['worker'].queryset = workers_for_user(request.user)
         if form.is_valid():
             data = form.cleaned_data
             try:
@@ -429,6 +601,11 @@ def crop_worker_create(request):
                 form.add_error(None, str(e))
     else:
         form = CropWorkerForm()
+        # Without this, the dropdowns show every crop/worker in the
+        # system — a Manager could assign a worker they don't oversee
+        # to a crop they don't oversee, on a farm that isn't theirs.
+        form.fields['crop'].queryset = crops_for_user(request.user)
+        form.fields['worker'].queryset = workers_for_user(request.user)
     return render(request, 'farm/crop_worker_form.html', {'form': form})
 
 

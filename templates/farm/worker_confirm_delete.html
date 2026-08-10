@@ -1,0 +1,19 @@
+{% extends 'farm/base.html' %}
+{% block title %}Delete Worker{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Delete Worker</h1>
+<div class="card"><div class="card-body">
+    <p>Delete <strong>{{ object.first_name }} {{ object.last_name }}</strong>?</p>
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        This also permanently deletes their entire crop-assignment and equipment-assignment
+        history — those records are set up to be removed automatically along with the worker.
+        This cannot be undone.
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'worker-detail' object.worker_id %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-danger">Delete Worker</button>
+    </form>
+</div></div>
+{% endblock %}

@@ -11,7 +11,11 @@ def _protected(view):
 
 
 urlpatterns = [
-    path('', _protected(views.DashboardView.as_view()), name='dashboard'),
+    path('', _protected(views.DashboardRouterView.as_view()), name='dashboard'),
+    path('dashboard/admin/', _protected(views.AdminDashboardView.as_view()), name='admin-dashboard'),
+    path('dashboard/manager/', _protected(views.ManagerDashboardView.as_view()), name='manager-dashboard'),
+    path('dashboard/worker/', _protected(views.WorkerDashboardView.as_view()), name='worker-dashboard'),
+    path('dashboard/sales/', _protected(views.SalesDashboardView.as_view()), name='sales-dashboard'),
 
     # --- Farm CRUD ---
     path('farms/', _protected(views.FarmListView.as_view()), name='farm-list'),
@@ -41,6 +45,7 @@ urlpatterns = [
     # --- Worker (read-only in-app; create/edit/delete via Django admin) ---
     path('workers/', _protected(views.WorkerListView.as_view()), name='worker-list'),
     path('workers/<uuid:worker_id>/', _protected(views.WorkerDetailView.as_view()), name='worker-detail'),
+    path('workers/<uuid:worker_id>/delete/', _protected(views.WorkerDeleteView.as_view()), name='worker-delete'),
 
     # --- Harvest CRUD ---
     path('harvests/', _protected(views.HarvestListView.as_view()), name='harvest-list'),
